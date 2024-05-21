@@ -16,6 +16,6 @@ RUN mkdir /code
 ENV LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN Y
 
 # Ensure that the MySQL server runs as the mysql user
-USER mysql
+# USER mysql
 
 # CMD ["mysqld"]
