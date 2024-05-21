@@ -1,0 +1,10 @@
+version: '2.2'
+services:
+  dev:
+    container_name: dev
+    build: ./docker
+    platform: 'linux/x86_64'
+    volumes:
+      - "./:/code"
+    environment:
+      - "MYSQL_ALLOW_EMPTY_PASSWORD=true"
