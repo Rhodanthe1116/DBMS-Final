@@ -1,6 +1,8 @@
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from graphql import graphql_sync
 from starlette.middleware.cors import CORSMiddleware
-from strawberry.fastapi import GraphQLRouter
+from ariadne.asgi import GraphQL
 
 from .builders.schema import (
     build_schema_from_db_config,
@@ -19,7 +21,14 @@ app.add_middleware(
 )
 
 
+# schema = strawberry.Schema(gql_schema)
+
+# print(schema)
+# graphql_app = GraphQLRouter(schema)
+# app.include_router(graphql_app, prefix="/graphql")
+
+
+# Route to handle GraphQL queries
 schema = build_schema_from_db_config(**db_config)
 
-graphql_app = GraphQLRouter(schema)
-app.include_router(graphql_app, prefix="/graphql")
+app.mount("/graphql/", GraphQL(schema, debug=True))
