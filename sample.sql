@@ -14,18 +14,24 @@ CREATE TABLE
           id VARCHAR(255),
           user_id VARCHAR(255),
           title VARCHAR(255),
-          body VARCHAR(255)
+          body VARCHAR(255),
+          PRIMARY KEY (id)
      );
 
 INSERT INTO
-     posts (title)
+     posts (id, title)
 VALUES
-     ('投稿1');
+     ('1', '投稿1'),
+     ('2', '投稿2');
 
 CREATE TABLE
-     IF NOT EXISTS users (id VARCHAR(255), username VARCHAR(255));
+     IF NOT EXISTS users (
+          id VARCHAR(255),
+          username VARCHAR(255),
+          PRIMARY KEY (id)
+     );
 
 INSERT INTO
-     users (username)
+     users (id, username)
 VALUES
-     ('使用者1')
+     ('1', '使用者1');
