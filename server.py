@@ -3,9 +3,9 @@ from starlette.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
 
 from .builders.schema import (
-    build_schema,
+    build_schema_from_db_config,
 )
-
+from .db_config import db_config
 
 
 app = FastAPI()
@@ -18,8 +18,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-schema = build_schema()
+
+schema = build_schema_from_db_config(**db_config)
 
 graphql_app = GraphQLRouter(schema)
 app.include_router(graphql_app, prefix="/graphql")
-
