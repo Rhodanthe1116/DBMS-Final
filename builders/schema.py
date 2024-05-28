@@ -7,12 +7,49 @@ from graphql import (
     GraphQLString,
     ThunkMapping,
     validate_schema,
+    GraphQLResolveInfo,
 )
 from sqlalchemy import Table, create_engine, MetaData, Engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 from ..utils import format_type_name
+
+
+def default_list_args():
+    return {"where": GraphQLString}
+
+
+def resolve_field(column):
+    def w(obj, info):
+        return getattr(obj, column.name)
+
+
+def resolve_one(table: Table):
+    def d():
+        dd = {}
+        for column in table.columns:
+            dd[column.name] = GraphQLField(
+                # should handle mysql type
+                GraphQLString,
+                resolve=resolve_field(column),
+            )
+            # should handle relation
+        return dd
+
+    return d
+
+
+def resolve_many(model):
+
+    def function_template(obj, info: GraphQLResolveInfo, **args):
+        print(info.variable_values)
+        print(args)
+        db = info.context["session"]
+        query = model.get_query(info)
+        return query.all()
+
+    return function_template
 
 
 def build_schema(engine: Engine) -> GraphQLSchema:
@@ -63,42 +100,16 @@ def build_schema(engine: Engine) -> GraphQLSchema:
         )
         print("graphene_model", models[table_name])
 
-        def resolve_field(column):
-            def w(obj, info):
-                return getattr(obj, column.name)
-
         # entity type, ex: Post
-        def resolve_one(table: Table):
-            def d():
-                dd = {}
-                for column in table.columns:
-                    dd[column.name] = GraphQLField(
-                        # should handle mysql type
-                        GraphQLString,
-                        resolve=resolve_field(column),
-                    )
-                    # should handle relation
-                return dd
-
-            return d
-
         object_type = GraphQLObjectType(
             name=type_name,
             fields=resolve_one(table),
         )
 
         # get many, ex: posts
-        def resolve_many(model):
-            def function_template(obj, info):
-                print("table_name", table_name)
-                db = info.context["session"]
-                query = model.get_query(info)
-                return query.all()
-
-            return function_template
-
         queries[table_name] = GraphQLField(
             GraphQLList(object_type),
+            args=default_list_args(),
             # how to get db session and query all in Table?
             resolve=resolve_many(models[table_name]),
         )
