@@ -24,8 +24,9 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     environment:
+      MYSQL_DATABASE: mydb
       MYSQL_USER: mysql
-      MYSQL_PASS: mysql
+      MYSQL_PASSWORD: mysql
       MYSQL_ROOT_PASSWORD: mysql
     
     # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
