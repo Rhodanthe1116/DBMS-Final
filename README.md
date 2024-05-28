@@ -1,4 +1,9 @@
 
+Import the sample data into the database with the following command:
+
+```bash
+python init_db.py
+```
 
 Start the server with the following command:
 

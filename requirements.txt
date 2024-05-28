@@ -2,3 +2,5 @@ mysql-connector-python
 SQLAlchemy
 strawberry-graphql[fastapi]
 fastapi
+ariadne
+graphene-sqlalchemy
