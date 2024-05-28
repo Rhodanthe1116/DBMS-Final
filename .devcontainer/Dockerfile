@@ -10,6 +10,11 @@ ENV PYTHONUNBUFFERED 1
 # [Optional] Uncomment this section to install additional OS packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
+RUN apt-get update && apt upgrade -y
+# RUN apt-get -y install mysql-server
+RUN apt-get -y install default-libmysqlclient-dev
+RUN apt-get -y install libmysqld-dev
+# RUN apt-get -y install mysql-shell
 
 
 
