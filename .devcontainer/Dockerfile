@@ -16,5 +16,7 @@ RUN apt-get -y install default-libmysqlclient-dev
 RUN apt-get -y install libmysqld-dev
 # RUN apt-get -y install mysql-shell
 
-
+COPY requirements.txt requirements.txt
+RUN pip3 install -r requirements.txt
+COPY . .
 
