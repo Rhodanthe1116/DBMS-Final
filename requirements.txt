@@ -1,6 +1,10 @@
 mysql-connector-python
 SQLAlchemy
 strawberry-graphql[fastapi]
-fastapi
-ariadne
-graphene-sqlalchemy
+fastapi==0.111.0
+ariadne==0.23.0
+graphene==3.3
+graphene-sqlalchemy==3.0.0rc1
+graphql-core==3.2.3
+graphql-relay==3.2.0
+inflection==0.5.1
