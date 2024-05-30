@@ -27,7 +27,6 @@ def build_object_type(model: DeclarativeMeta, objects: Objects) -> GraphQLObject
                 graphql_type = GraphQLNonNull(graphql_type)
 
             fields[column.name] = GraphQLField(graphql_type, resolve=make_field_resolver(column.name))
-
         for name, relationship in get_relationships(model):
             object_type: GraphQLOutputType = objects[get_table_name(relationship.mapper.entity)]
             if relationship.direction in (interfaces.ONETOMANY, interfaces.MANYTOMANY):
