@@ -1,11 +1,12 @@
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
-from graphql import graphql_sync
+from graphql import graphql_sync, validate_schema
 from sqlalchemy import create_engine
 from starlette.middleware.cors import CORSMiddleware
 from ariadne.asgi import GraphQL
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from .src.graphql_sqlalchemy import build_schema
 
 
 from .builders.schema import (
@@ -48,8 +49,13 @@ app.add_middleware(
 
 
 # Route to handle GraphQL queries
-schema = build_schema_from_db_config(**db_config)
-
+# schema = build_schema_from_db_config(**db_config)
+schema = build_schema(Base)
+print(schema)
+errors = validate_schema(schema)
+if errors:
+    formatted_errors = "\n\n".join(f"❌ {error.message}" for error in errors)
+    raise ValueError(f"Invalid Schema. Errors:\n\n{formatted_errors}")
 
 def get_context_value(request_or_ws: Request, _data) -> dict:
     return {
