@@ -1,5 +1,5 @@
 import mysql.connector
-from db_config import db_config
+from src.db_config import db_config
 import argparse
 
 dbname = db_config["db_name"]
