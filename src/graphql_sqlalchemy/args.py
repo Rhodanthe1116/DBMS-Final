@@ -60,7 +60,8 @@ def make_delete_args(model: DeclarativeMeta, inputs: Inputs) -> GraphQLArgumentM
 
 def make_update_args(model: DeclarativeMeta, inputs: Inputs) -> GraphQLArgumentMap:
     return {
-        "_inc": GraphQLArgument(get_inc_input_type(model, inputs)),
+        # if there is no int or float column, it will raise an error        
+        # "_inc": GraphQLArgument(get_inc_input_type(model, inputs)),
         "_set": GraphQLArgument(get_set_input_type(model, inputs)),
         "where": GraphQLArgument(get_where_input_type(model, inputs)),
     }
@@ -68,7 +69,8 @@ def make_update_args(model: DeclarativeMeta, inputs: Inputs) -> GraphQLArgumentM
 
 def make_update_by_pk_args(model: DeclarativeMeta, inputs: Inputs) -> GraphQLArgumentMap:
     return {
-        "_inc": GraphQLArgument(get_inc_input_type(model, inputs)),
+        # if there is no int or float column, it will raise an error
+        # "_inc": GraphQLArgument(get_inc_input_type(model, inputs)),
         "_set": GraphQLArgument(get_set_input_type(model, inputs)),
         "pk_columns": GraphQLArgument(GraphQLNonNull(get_pk_columns_input(model))),
     }

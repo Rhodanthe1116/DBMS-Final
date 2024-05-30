@@ -4,9 +4,12 @@ from graphql import graphql_sync, validate_schema
 from sqlalchemy import create_engine
 from starlette.middleware.cors import CORSMiddleware
 from ariadne.asgi import GraphQL
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .src.graphql_sqlalchemy import build_schema
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import registry
+from sqlalchemy.ext.automap import automap_base
 
 
 from .builders.schema import (
@@ -19,8 +22,19 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+# Base = declarative_base()
+Base = automap_base()
+Base.prepare(autoload_with=engine)
 
+# reg = registry()
+
+# # declarative base class
+# class Base(DeclarativeBase):
+#     registry = reg
+
+# registry.generate_base, then the list of models, that are connected to the mappers, can be accessed via registry.mappers
+
+# registry.generate_base(Base, registry.mappers)
 
 def get_db():
     db = SessionLocal()

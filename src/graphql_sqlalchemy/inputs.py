@@ -117,7 +117,8 @@ def get_inc_input_type(model: DeclarativeMeta, inputs: Inputs) -> GraphQLInputOb
     for column in get_table(model).columns:
         if isinstance(column.type, (Integer, Float)):
             fields[column.name] = GraphQLInputField(get_graphql_type_from_column(column.type))
-
+    if fields == {}:
+        raise ValueError(f"Model {model} has no integer or float columns")
     inputs[type_name] = GraphQLInputObjectType(type_name, fields)
     return inputs[type_name]
 
