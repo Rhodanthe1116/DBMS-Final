@@ -41,8 +41,11 @@ def check_sqlfile_success():
         try:
             print("Checking data in database")
             cursor.execute(f'''
-                select * from category;
+                select * from Manager;
             ''')
+            # cursor.execute(f'''
+            #     insert into category (category_id, name, last_update) values (1, 'Action', '2006-02-15 04:46:27');
+            # ''')
             rows = cursor.fetchall()
             if rows == []:
                 raise Exception("Data not found in database")
