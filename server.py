@@ -1,20 +1,13 @@
 from fastapi import Depends, FastAPI, Request
-from fastapi.responses import JSONResponse
-from graphql import graphql_sync, validate_schema
 from sqlalchemy import create_engine
 from starlette.middleware.cors import CORSMiddleware
 from ariadne.asgi import GraphQL
 from sqlalchemy.orm import sessionmaker
-from .src.graphql_sqlalchemy import build_schema
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import registry
-from sqlalchemy.ext.automap import automap_base
+from .src.graphql_sqlalchemy import build_schema_from_db_config
 
-
-from .builders.schema import (
-    build_schema_from_db_config,
-)
+# from .builders.schema import (
+#     build_schema_from_db_config,
+# )
 from .db_config import db_config
 
 engine = create_engine(
@@ -22,19 +15,6 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base = declarative_base()
-Base = automap_base()
-Base.prepare(autoload_with=engine)
-
-# reg = registry()
-
-# # declarative base class
-# class Base(DeclarativeBase):
-#     registry = reg
-
-# registry.generate_base, then the list of models, that are connected to the mappers, can be accessed via registry.mappers
-
-# registry.generate_base(Base, registry.mappers)
 
 def get_db():
     db = SessionLocal()
@@ -55,21 +35,9 @@ app.add_middleware(
 )
 
 
-# schema = strawberry.Schema(gql_schema)
-
-# print(schema)
-# graphql_app = GraphQLRouter(schema)
-# app.include_router(graphql_app, prefix="/graphql")
-
-
 # Route to handle GraphQL queries
-# schema = build_schema_from_db_config(**db_config)
-schema = build_schema(Base)
-print(schema)
-errors = validate_schema(schema)
-if errors:
-    formatted_errors = "\n\n".join(f"❌ {error.message}" for error in errors)
-    raise ValueError(f"Invalid Schema. Errors:\n\n{formatted_errors}")
+schema = build_schema_from_db_config(**db_config)
+
 
 def get_context_value(request_or_ws: Request, _data) -> dict:
     return {

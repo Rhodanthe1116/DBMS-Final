@@ -1,4 +1,5 @@
-from graphql import GraphQLField, GraphQLFieldMap, GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLSchema
+from graphql import GraphQLField, GraphQLFieldMap, GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLSchema, validate_schema
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from .args import (
@@ -34,6 +35,7 @@ from .resolvers import (
 )
 from .types import Inputs, Objects
 
+from sqlalchemy.ext.automap import automap_base
 
 def build_queries(model: DeclarativeMeta, objects: Objects, queries: GraphQLFieldMap, inputs: Inputs) -> None:
     object_type = build_object_type(model, objects)
@@ -105,9 +107,37 @@ def build_schema(base: DeclarativeMeta, enable_subscription: bool = False) -> Gr
     for model in base.__subclasses__():
         build_queries(model, objects, queries, inputs)
         build_mutations(model, objects, mutations, inputs)
-    
+
     return GraphQLSchema(
         GraphQLObjectType("Query", queries),
         GraphQLObjectType("Mutation", mutations),
         GraphQLObjectType("Subscription", {}) if enable_subscription else None,
     )
+
+
+def build_schema_from_db_config(
+    host: str = None,
+    port: int = None,
+    user: str = None,
+    password: str = None,
+    db_name: str = None,
+):
+    # connect mysql db using sqlalchemy create_engine
+    engine = create_engine(
+        f"mysql+mysqlconnector://{user}:{password}@{host}/{db_name}?charset=utf8mb4",
+    )
+
+    Base = automap_base()
+    Base.prepare(autoload_with=engine)
+
+    for table in Base.__subclasses__():
+        print(table)
+
+    schema = build_schema(Base)
+
+    errors = validate_schema(schema)
+    if errors:
+        formatted_errors = "\n\n".join(f"❌ {error.message}" for error in errors)
+        raise ValueError(f"Invalid Schema. Errors:\n\n{formatted_errors}")
+
+    return schema
