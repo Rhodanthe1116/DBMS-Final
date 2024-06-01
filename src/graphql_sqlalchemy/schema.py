@@ -22,12 +22,13 @@ from .names import (
     get_model_update_name,
     get_table_name,
 )
-from .objects import build_mutation_response_type, build_object_type
+from .objects import build_aggregate_object_type, build_mutation_response_type, build_object_type
 from .resolvers import (
     make_delete_by_pk_resolver,
     make_delete_resolver,
     make_insert_one_resolver,
     make_insert_resolver,
+    make_object_aggregate_resolver,
     make_object_resolver,
     make_pk_resolver,
     make_update_by_pk_resolver,
@@ -41,10 +42,20 @@ def build_queries(model: DeclarativeMeta, objects: Objects, queries: GraphQLFiel
     object_type = build_object_type(model, objects)
 
     objects[object_type.name] = object_type
+
+    filter_args = make_args(model, inputs=inputs)
+
     queries[object_type.name] = GraphQLField(
         GraphQLNonNull(GraphQLList(GraphQLNonNull(object_type))),
-        args=make_args(model, inputs=inputs),
+        args=filter_args,
         resolve=make_object_resolver(model),
+    )
+
+    aggregate_object_type = build_aggregate_object_type(model, objects)
+    queries[aggregate_object_type.name] = GraphQLField(
+        GraphQLNonNull(aggregate_object_type),
+        args=filter_args,
+        resolve=make_object_aggregate_resolver(model),
     )
 
     if get_table(model).primary_key:
@@ -129,9 +140,6 @@ def build_schema_from_db_config(
 
     Base = automap_base()
     Base.prepare(autoload_with=engine)
-
-    for table in Base.__subclasses__():
-        print(table)
 
     schema = build_schema(Base)
 

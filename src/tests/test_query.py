@@ -56,7 +56,6 @@ def test_comparison_operation(test_client:TestClient):
     assert response.json() == expected
 
 
-
 # basic projection
 def test_projection(test_client:TestClient):
     query = """{
@@ -131,7 +130,6 @@ def test_rename(test_client:TestClient):
     assert response.json() == expected
 
 
-
 # basic equijoin
 def test_equijoin(test_client:TestClient):
     query = """{
@@ -184,7 +182,6 @@ def test_equijoin(test_client:TestClient):
     pp.pprint(response)
     pp.pprint(response.json())
     assert response.json() == expected
-
 
 
 # basic natural join
@@ -291,7 +288,6 @@ def test_in_operator(test_client:TestClient):
     assert response.json() == expected
 
 
-
 # TODO: basic in2 Need to fix nested query
 def test_in_operator2(test_client:TestClient):
     query = """{
@@ -318,6 +314,64 @@ def test_in_operator2(test_client:TestClient):
                 "age": 35
             }
             ]
+        }
+    }
+
+    response = test_client.post("/graphql/", data=query)
+    pp.pprint(response)
+    pp.pprint(response.json())
+    assert response.json() == expected
+
+
+def test_simple_aggregation(test_client: TestClient):
+    query = """{
+  Player_aggregate(where: {team_id: {_eq: 3}}) {
+    aggregate {
+      count
+      sum {
+        age
+      }
+      avg {
+        age
+      }
+      max {
+        age
+      }
+    }
+    nodes {
+      name
+      age
+      team {
+        team_id
+        team_name
+      }
+    }
+  }
+}
+        """
+
+    expected = {
+        "data": {
+            "Player_aggregate": {
+                "aggregate": {
+                    "count": 2,
+                    "sum": {"age": 68},
+                    "avg": {"age": 34},
+                    "max": {"age": 35},
+                },
+                "nodes": [
+                    {
+                        "name": "Valender",
+                        "age": 35,
+                        "team": {"team_id": 3, "team_name": "Red sox"},
+                    },
+                    {
+                        "name": "Tax",
+                        "age": 33,
+                        "team": {"team_id": 3, "team_name": "Red sox"},
+                    },
+                ],
+            }
         }
     }
 

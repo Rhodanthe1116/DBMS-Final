@@ -1,8 +1,8 @@
 from functools import partial
 from itertools import starmap
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, TypedDict, Union
 
-from sqlalchemy import Column, and_, not_, or_, true
+from sqlalchemy import Column, and_, func, not_, or_, true
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm import Query, Session
 from sqlalchemy.sql import ClauseElement
@@ -15,7 +15,9 @@ def make_field_resolver(field: str) -> Callable:
     return resolver
 
 
-def get_bool_operation(model_property: Column, operator: str, value: Any) -> Union[bool, ClauseElement]:
+def get_bool_operation(
+    model_property: Column, operator: str, value: Any
+) -> Union[bool, ClauseElement]:
     if operator == "_eq":
         return model_property == value
 
@@ -52,7 +54,9 @@ def get_bool_operation(model_property: Column, operator: str, value: Any) -> Uni
     raise Exception("Invalid operator")
 
 
-def get_filter_operation(model: DeclarativeMeta, where: Dict[str, Any]) -> ClauseElement:
+def get_filter_operation(
+    model: DeclarativeMeta, where: Dict[str, Any]
+) -> ClauseElement:
     partial_filter = partial(get_filter_operation, model)
 
     for name, exprs in where.items():
@@ -72,7 +76,9 @@ def get_filter_operation(model: DeclarativeMeta, where: Dict[str, Any]) -> Claus
     return true()
 
 
-def filter_query(model: DeclarativeMeta, query: Query, where: Optional[Dict[str, Any]] = None) -> Query:
+def filter_query(
+    model: DeclarativeMeta, query: Query, where: Optional[Dict[str, Any]] = None
+) -> Query:
     if not where:
         return query
 
@@ -83,7 +89,9 @@ def filter_query(model: DeclarativeMeta, query: Query, where: Optional[Dict[str,
     return query
 
 
-def order_query(model: DeclarativeMeta, query: Query, order: Optional[List[Dict[str, Any]]] = None) -> Query:
+def order_query(
+    model: DeclarativeMeta, query: Query, order: Optional[List[Dict[str, Any]]] = None
+) -> Query:
     if not order:
         return query
 
@@ -118,7 +126,102 @@ def make_object_resolver(model: DeclarativeMeta) -> Callable:
         if offset:
             query = getattr(query, "offset")(offset)
 
+        print(query)
         return query.all()
+
+    return resolver
+
+
+def make_dict_resolver(key: str) -> Callable:
+    def resolver(
+        obj: dict,
+        info: Any,
+    ) -> Any:
+        return obj[key]
+
+    return resolver
+
+
+class AggregateAction(TypedDict):
+    name: str
+    on: str
+    func: Any
+
+
+def make_object_aggregate_resolver(model: DeclarativeMeta) -> Callable:
+    def resolver(
+        _root: None,
+        info: Any,
+        where: Optional[Dict[str, Any]] = None,
+        order: Optional[List[Dict[str, Any]]] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> List[DeclarativeMeta]:
+        session = info.context["session"]
+        nodes_query = session.query(model)
+
+        aggregates_selections = (
+            info.field_nodes[0].selection_set.selections[0].selection_set.selections
+        )
+        '''
+        
+        '''
+        actions: List[AggregateAction] = []
+        for aggregate in aggregates_selections:
+            action = aggregate.name.value
+            if action == "count":
+                actions.append(
+                    {
+                        "name": action,
+                        "on": "*",
+                        "func": func.count("*").label("count_all"),
+                    }
+                )
+            else:
+                for field in aggregate.selection_set.selections:
+                    action_func = getattr(func, action)
+                    actions.append(
+                        {
+                            "name": action,
+                            "on": field.name.value,
+                            "func": action_func(getattr(model, field.name.value)).label(
+                                f"{action}_{field.name.value}"
+                            ),
+                        }
+                    )
+
+        aggregates_query = session.query(*(action["func"] for action in actions))
+
+        nodes_query = filter_query(model, nodes_query, where)
+        aggregates_query = filter_query(model, aggregates_query, where)
+        nodes_query = order_query(model, nodes_query, order)
+        aggregates_query = order_query(model, aggregates_query, order)
+
+        if limit:
+            nodes_query = getattr(nodes_query, "limit")(limit)
+            aggregates_query = getattr(aggregates_query, "limit")(limit)
+
+        if offset:
+            nodes_query = getattr(nodes_query, "offset")(offset)
+            aggregates_query = getattr(aggregates_query, "offset")(offset)
+
+        print(nodes_query)
+        nodes = nodes_query.all()
+
+        print(aggregates_query)
+        aggregate_result = aggregates_query.first()
+        aggregate = {}
+        for index, action in enumerate(actions):
+            if action["on"] == "*":
+                aggregate[action["name"]] = aggregate_result[index]
+            else:
+                if action["name"] not in aggregate:
+                    aggregate[action["name"]] = {}
+                aggregate[action["name"]][action["on"]] = aggregate_result[index]
+        return {
+            "aggregate": aggregate,
+            "nodes": nodes,
+        }
 
     return resolver
 
@@ -132,7 +235,10 @@ def make_pk_resolver(model: DeclarativeMeta) -> Callable:
 
 
 def session_add_object(
-    obj: Dict[str, Any], model: DeclarativeMeta, session: Session, on_conflict: Optional[Dict[str, Any]] = None
+    obj: Dict[str, Any],
+    model: DeclarativeMeta,
+    session: Session,
+    on_conflict: Optional[Dict[str, Any]] = None,
 ) -> DeclarativeMeta:
     instance = model()
     for key, value in obj.items():
@@ -155,7 +261,10 @@ def session_commit(session: Session) -> None:
 
 def make_insert_resolver(model: DeclarativeMeta) -> Callable:
     def resolver(
-        _root: None, info: Any, objects: List[Dict[str, Any]], on_conflict: Optional[Dict[str, Any]] = None
+        _root: None,
+        info: Any,
+        objects: List[Dict[str, Any]],
+        on_conflict: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Union[int, List[DeclarativeMeta]]]:
         session = info.context["session"]
         models = []
@@ -173,7 +282,10 @@ def make_insert_resolver(model: DeclarativeMeta) -> Callable:
 
 def make_insert_one_resolver(model: DeclarativeMeta) -> Callable:
     def resolver(
-        _root: None, info: Any, object: Dict[str, Any], on_conflict: Optional[Dict[str, Any]] = None
+        _root: None,
+        info: Any,
+        object: Dict[str, Any],
+        on_conflict: Optional[Dict[str, Any]] = None,
     ) -> DeclarativeMeta:
         session = info.context["session"]
 
@@ -202,7 +314,9 @@ def make_delete_resolver(model: DeclarativeMeta) -> Callable:
 
 
 def make_delete_by_pk_resolver(model: DeclarativeMeta) -> Callable:
-    def resolver(_root: None, info: Any, **kwargs: Dict[str, Any]) -> List[DeclarativeMeta]:
+    def resolver(
+        _root: None, info: Any, **kwargs: Dict[str, Any]
+    ) -> List[DeclarativeMeta]:
         session = info.context["session"]
 
         row = session.query(model).get(kwargs)
