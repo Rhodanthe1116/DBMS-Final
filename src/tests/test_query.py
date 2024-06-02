@@ -330,89 +330,83 @@ def test_simple_aggregation(test_client: TestClient):
     assert response.json() == expected
 
 
-
 def test_crud_player(test_client: TestClient):
 
-    query = """{
-        Player{
-            player_id
-            name
-            age
-            team_id
-        }
-    }    
+    query = """
+{
+  Player {
+    player_id
+    name
+    age
+    team_id
+  }
+}
     """
 
     insert = """
-    mutation{
-        insert_Player(objects:{
-            player_id:99, name:"ABC", age:30, team_id:3}) {
-        returning{
-            name
-            age
-        }
-    
-        }
+mutation {
+  insert_Player(objects: {player_id: 99, name: "New Player", age: 30, team_id: 3}) {
+    returning {
+      name
+      age
     }
+  }
+}
         """
 
-    check = """{
-        Player{
-            player_id
-            name
-            age
-            team_id
-        }
-    }
+    check = """
+{
+  Player {
+    player_id
+    name
+    age
+    team_id
+  }
+}
     """
 
     update = """
-        mutation{
-            update_Player_by_pk(
-            _set:{name:"NewABC"},
-            pk_columns:{player_id:99}
-        ){
-            player_id
-            name
-        }
-        }
+mutation {
+  update_Player_by_pk(_set: {name: "NewName"}, pk_columns: {player_id: 99}) {
+    player_id
+    name
+  }
+}
         """
 
     check = """{
-        Player{
-            player_id
-            name
-            age
-            team_id
-        }
-    }
+{
+  Player {
+    player_id
+    name
+    age
+    team_id
+  }
+}
     """
-
 
     delete = """
-        mutation{
-            delete_Player(where:{
-            player_id:{_eq:99}}){
-                returning{
-                            player_id
-                }
-            }
-        }
-    """
-
-    check = """{
-        Player{
-            player_id
-            name
-            age
-            team_id
-        }
+mutation {
+  delete_Player(where: {player_id: {_eq: 99}}) {
+    returning {
+      player_id
     }
+  }
+}
     """
 
+    check = """
+{
+  Player {
+    player_id
+    name
+    age
+    team_id
+  }
+}    
+    """
 
     response = test_client.post("/graphql/", data=query)
     pp.pprint(response)
     pp.pprint(response.json())
     assert response.json() == check
-

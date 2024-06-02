@@ -134,12 +134,9 @@ def make_object_resolver(model: DeclarativeMeta) -> Callable:
         if offset:
             query = getattr(query, "offset")(offset)
 
-        print(query)
         return query.all()
 
     return resolver
-
-
 
 
 def make_dict_resolver(key: str) -> Callable:
@@ -221,10 +218,8 @@ def make_object_aggregate_resolver(model: DeclarativeMeta) -> Callable:
         # if group_by:
         #     aggregates_query = aggregates_query.group_by(*group_by)
 
-        print(nodes_query)
         nodes = nodes_query.all()
 
-        print(aggregates_query)
         aggregate_result = aggregates_query.first()
         aggregate = {}
         for index, action in enumerate(actions):
@@ -316,13 +311,12 @@ def make_delete_resolver(model: DeclarativeMeta) -> Callable:
     def resolver(
         _root: None, info: Any, where: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Union[int, List[DeclarativeMeta]]]:
-        session = info.context["session"]
+        session: Session = info.context["session"]
         query = session.query(model)
         query = filter_query(model, query, where)
 
         rows = query.all()
         affected = query.delete()
-        session.commit()
 
         return {"affected_rows": affected, "returning": rows}
 
@@ -336,7 +330,7 @@ def make_delete_by_pk_resolver(model: DeclarativeMeta) -> Callable:
         session = info.context["session"]
 
         row = session.query(model).get(kwargs)
-        session.delete(row)
+        result = session.delete(row)
         session.commit()
 
         return row
