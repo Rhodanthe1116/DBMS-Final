@@ -1,10 +1,10 @@
 from functools import partial
 from itertools import starmap
 from typing import Any, Callable, Dict, List, Optional, TypedDict, Union
-
+from .helpers import get_mapper
 from sqlalchemy import Column, and_, func, not_, or_, true
 from sqlalchemy.ext.declarative import DeclarativeMeta
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm import Query, Session, interfaces
 from sqlalchemy.sql import ClauseElement
 
 
@@ -68,8 +68,16 @@ def get_filter_operation(
 
         if name == "_and":
             return and_(*map(partial_filter, exprs))
-
+        
         model_property = getattr(model, name)
+
+        if relationship := get_mapper(model).relationships.get(name):
+            related_model = relationship.entity.class_
+            if relationship.direction in (interfaces.ONETOMANY, interfaces.MANYTOMANY):
+                elem_filter = get_filter_operation(related_model, exprs)
+                return model_property.any(elem_filter)
+            return model_property.and_(get_filter_operation(related_model, exprs))
+
         partial_bool = partial(get_bool_operation, model_property)
         return and_(*(starmap(partial_bool, exprs.items())))
 
@@ -353,14 +361,14 @@ def make_update_resolver(model: DeclarativeMeta) -> Callable:
         _root: None,
         info: Any,
         where: Dict[str, Any],
-        _set: Optional[Dict[str, Any]],
-        _inc: Optional[Dict[str, Any]],
+        _set: Optional[Dict[str, Any]]=None,
+        _inc: Optional[Dict[str, Any]]=None,
     ) -> Dict[str, Union[int, List[DeclarativeMeta]]]:
         session = info.context["session"]
         query = session.query(model)
         query = filter_query(model, query, where)
         affected = update_query(query, model, _set, _inc)
-
+        session.commit()
         return {
             "affected_rows": affected,
             "returning": query.all(),
@@ -374,13 +382,14 @@ def make_update_by_pk_resolver(model: DeclarativeMeta) -> Callable:
         _root: None,
         info: Any,
         pk_columns: Dict[str, Any],
-        _set: Optional[Dict[str, Any]],
-        _inc: Optional[Dict[str, Any]],
+        _set: Optional[Dict[str, Any]]=None,
+        _inc: Optional[Dict[str, Any]]=None,
     ) -> Optional[DeclarativeMeta]:
         session = info.context["session"]
         query = session.query(model).filter_by(**pk_columns)
 
         if update_query(query, model, _set, _inc):
+            session.commit()
             return query.one()
 
         return None
