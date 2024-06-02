@@ -132,6 +132,8 @@ def make_object_resolver(model: DeclarativeMeta) -> Callable:
     return resolver
 
 
+
+
 def make_dict_resolver(key: str) -> Callable:
     def resolver(
         obj: dict,
@@ -204,6 +206,12 @@ def make_object_aggregate_resolver(model: DeclarativeMeta) -> Callable:
         if offset:
             nodes_query = getattr(nodes_query, "offset")(offset)
             aggregates_query = getattr(aggregates_query, "offset")(offset)
+
+        # group_by = [
+        #     getattr(model, action["on"])
+        # ]
+        # if group_by:
+        #     aggregates_query = aggregates_query.group_by(*group_by)
 
         print(nodes_query)
         nodes = nodes_query.all()
