@@ -237,59 +237,8 @@ def test_naturaljoin(test_client:TestClient):
     pp.pprint(response.json())
     assert response.json() == expected
 
-
-# TODO: basic theta join, or maybe need to nested query
-def test_thetajoin(test_client:TestClient):
-    query = """{
-        }
-        """
-
-    expected = {
-    }
-
-    response = test_client.post("/graphql/", data=query)
-    pp.pprint(response)
-    pp.pprint(response.json())
-    assert response.json() == expected
-
-
 # basic in
 def test_in_operator(test_client:TestClient):
-    query = """{
-            Player(where: { age:{_in: [25, 31, 35] }}) {
-                name
-                age
-            }
-        }
-        """
-
-    expected = {
-        "data": {
-            "Player": [
-            {
-                "name": "Otani",
-                "age": 25
-            },
-            {
-                "name": "Kershaw",
-                "age": 31
-            },
-            {
-                "name": "Valender",
-                "age": 35
-            }
-            ]
-        }
-    }
-
-    response = test_client.post("/graphql/", data=query)
-    pp.pprint(response)
-    pp.pprint(response.json())
-    assert response.json() == expected
-
-
-# TODO: basic in2 Need to fix nested query
-def test_in_operator2(test_client:TestClient):
     query = """{
             Player(where: { age:{_in: [25, 31, 35] }}) {
                 name
@@ -379,3 +328,91 @@ def test_simple_aggregation(test_client: TestClient):
     pp.pprint(response)
     pp.pprint(response.json())
     assert response.json() == expected
+
+
+
+def test_crud_player(test_client: TestClient):
+
+    query = """{
+        Player{
+            player_id
+            name
+            age
+            team_id
+        }
+    }    
+    """
+
+    insert = """
+    mutation{
+        insert_Player(objects:{
+            player_id:99, name:"ABC", age:30, team_id:3}) {
+        returning{
+            name
+            age
+        }
+    
+        }
+    }
+        """
+
+    check = """{
+        Player{
+            player_id
+            name
+            age
+            team_id
+        }
+    }
+    """
+
+    update = """
+        mutation{
+            update_Player_by_pk(
+            _set:{name:"NewABC"},
+            pk_columns:{player_id:99}
+        ){
+            player_id
+            name
+        }
+        }
+        """
+
+    check = """{
+        Player{
+            player_id
+            name
+            age
+            team_id
+        }
+    }
+    """
+
+
+    delete = """
+        mutation{
+            delete_Player(where:{
+            player_id:{_eq:99}}){
+                returning{
+                            player_id
+                }
+            }
+        }
+    """
+
+    check = """{
+        Player{
+            player_id
+            name
+            age
+            team_id
+        }
+    }
+    """
+
+
+    response = test_client.post("/graphql/", data=query)
+    pp.pprint(response)
+    pp.pprint(response.json())
+    assert response.json() == check
+

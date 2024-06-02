@@ -1,5 +1,5 @@
 ## Database initialization
-Use [sakila](https://dev.mysql.com/doc/sakila/en/) as test_db.
+Use **baseballdb** from hw3 as test_db.
 
 Import the sample data into the database with the following command:
 
@@ -19,3 +19,9 @@ fastapi dev ./src/server.py
 ```
 
 Then open your browser and go to [http://127.0.0.1:8000/graphql](http://127.0.0.1:8000/graphql)
+
+## Testing
+Query and Mutation showed in Demo can be found in:
+```bash
+src/tests/test_query.py
+```
